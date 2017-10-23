@@ -1,39 +1,30 @@
 (in-package #:ceplscope)
 
-(defparameter *intensity* 15.0)
+(defparameter *intensity* 8.0)
 (defparameter *scaling* 0.8)
 (defparameter *weight* 0.02)
+(defparameter *trail-count* 2000)
+(defparameter *t-scale* 0.5)
+(defparameter *t-resolution* 0.05)
 
 (defparameter *eps* 1e-6)
-(defparameter *loop-start-time* 0.0)
-(defparameter *blending* (make-blending-params
-                          :source-rgb :src-alpha
-                          :destination-rgb :one
-                          :mode-rgb :func-add))
+(defvar *loop-start-time* 0.0)
+(defparameter *blending*
+  (make-blending-params
+   :source-rgb :src-alpha
+   :destination-rgb :one
+   :mode-rgb :func-add))
 
-
-(defmacro-g -> (&body body)
-  (macroexpand `(cl-arrows:-> ,@body)))
-
-(defun-g gaussian ((x :float) (sigma :float))
-  (/ (exp (/ (- (* x x))
-             (* 2.0 sigma sigma)))
-     (* sigma #.(sqrt (* 2 pi)))))
-
-(defun-g erf ((x :float))
-  (let ((s (sign x))
-        (a (abs x)))
-    (setf x (-> a
-                (* a 0.078108)
-                (+ 0.230389)
-                (* a)
-                (+ 0.278393)
-                (* a)
-                (+ 1))
-          x (* x x)
-          x (* x x))
-    (- s (/ s x))))
-
+(defun test-curve ()
+  (make-buffer-stream
+   (list (make-gpu-array
+          (list (v! -1.0 0.0)
+                (v! 1.0 0.0))
+          :element-type :vec2)
+         (make-gpu-array
+          (list 500.0 500.0)
+          :element-type :float))
+   :primitive :line-strip))
 
 (defun-g vert ((pnt :vec2) (glow :float))
   (values (vec4 0.0) pnt glow))
@@ -61,7 +52,7 @@
 
                         ,glow
                         (v! ,(if (>= idx 2.0)
-                                 `(+ usize)
+                                 `usize
                                  `(- (length dir) usize))
                             (* norm-sign usize))
                         (length dir))
@@ -112,24 +103,24 @@
   :geometry (geom (:vec2 2) (:float 2))
   :fragment (frag :float :vec2 :float))
 
-(defun make-curve (time &optional (trail 1000) (t-factor 0.05))
+(defun make-curve (time)
   (let ((arr (make-gpu-array
-              (loop :for i :downfrom time
-                    :repeat trail
-                    :collect (v! (cos (+ (* 3.0 i t-factor)
-                                         (* 0.000 i t-factor)))
-                                 (sin (+ (* 5.0 i t-factor)
-                                         (* 0.002 i t-factor)))))
+              (loop :for i :downfrom time :by *t-resolution*
+                    :repeat *trail-count*
+                    :collect (v! (cos (loop-thingy i 3.0 *t-scale*))
+                                 (sin (+ (loop-thingy i 5.0 *t-scale*)
+                                         (loop-thingy i 0.002 *t-scale*)))))
               :element-type :vec2
-              :dimensions trail
+              :dimensions *trail-count*
               ))
-        (glows (make-gpu-array
-                (loop :for i :below trail
-                      :collect (* (expt (- trail i) 2.0)
-                                  (/ 500.0 (expt trail 2.0))))
-                :element-type :float
-                :dimensions trail
-                )))
+        (glows
+          (make-gpu-array
+           (loop :for i :below *trail-count*
+                 :collect (* 500.0 (expt (/ (- *trail-count* i) *trail-count*) 2.0)))
+           :element-type :float
+           :dimensions *trail-count*
+           )
+          ))
     (make-buffer-stream (list arr glows) :primitive :line-strip)))
 
 (defun step-scope ()
@@ -144,7 +135,6 @@
 
 (def-simple-main-loop run-scope
     (:on-start (lambda ()
-                 (print "strating")
                  (setf *loop-start-time* (get-internal-real-time))
                  (gl:clear-color 0.0 0.0 0.0 0.0)
                  (gl:depth-func :lequal)

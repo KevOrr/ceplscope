@@ -1,7 +1,15 @@
+(defpackage ceplscope.arrows
+  (:use #:cl #:cepl)
+  (:export #:->
+           #:->>
+           #:-<>))
+
 (defpackage ceplscope
-    (:use #:cl
-          #:cepl
-          #:vari
-          #:rtg-math
-          #:livesupport
-          #:nineveh))
+  (:use #:cl
+        #:ceplscope.arrows
+
+        #:cepl
+        #:vari
+        #:rtg-math
+        #:livesupport
+        #:nineveh))

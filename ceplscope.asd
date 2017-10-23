@@ -1,14 +1,20 @@
 (asdf:defsystem #:ceplscope
   :description "An oscilloscope simulator written in Lisp and CEPL"
   :author "Kevin Orr"
-  :depends-on (#:cepl
-               #:cepl.sdl2
+  :depends-on (#:lisp-matrix
+               #:cl-arrows
                #:slynk
+
+               #:cepl
+               #:cepl.sdl2
                #:livesupport
                #:cepl.skitter.sdl2
                #:dirt
-               #:nineveh
-               #:cl-arrows)
+               #:nineveh)
   :serial t
   :components ((:file "package")
-               (:file "ceplscope")))
+               (:file "arrows")
+               ;; (:file "matrix")
+               (:file "util")
+               (:file "ceplscope")
+               (:file "asdfg")))

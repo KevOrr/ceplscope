@@ -1,0 +1,31 @@
+(in-package ceplscope)
+
+(defun-g gaussian ((x :float) (sigma :float))
+  (/ (exp (/ (- (* x x))
+             (* 2.0 sigma sigma)))
+     (* sigma #.(sqrt (* 2 pi)))))
+
+(defun-g erf ((x :float))
+  (let* ((s (sign x))
+         (a (abs x))
+         (x (-> 0.078108
+                (* a)
+                (+ 0.000972)
+                (* a)
+                (+ 0.230389)
+                (* a)
+                (+ 0.278393)
+                (* a)
+                (+ 1.0)
+                (pow 4.0))))
+    (- s (/ s x))))
+
+(defun-g normcdf ((error :float) (sigma :float))
+  (/ (erf (/ error #.(sqrt 2) sigma)) 0.2))
+
+(defmacro loop-thingy (driver &rest rest)
+  (let ((scale (gensym "SCALE")))
+    `(let ((, scale (* ,@rest)))
+       (if (< *eps* ,scale)
+           (* ,scale (mod ,driver (/ ,(* 2 pi) ,scale)))
+           (* ,scale ,driver)))))
