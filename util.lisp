@@ -21,7 +21,7 @@
     (- s (/ s x))))
 
 (defun-g normcdf ((error :float) (sigma :float))
-  (/ (erf (/ error #.(sqrt 2) sigma)) 0.2))
+  (erf (/ error #.(sqrt 2) sigma)))
 
 (defmacro loop-thingy (driver &rest rest)
   (let ((scale (gensym "SCALE")))

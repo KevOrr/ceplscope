@@ -1,19 +1,20 @@
 (in-package #:ceplscope)
 
-(defparameter *intensity* 8.0)
-(defparameter *scaling* 0.8)
-(defparameter *weight* 0.02)
-(defparameter *trail-count* 2000)
-(defparameter *t-scale* 0.5)
-(defparameter *t-resolution* 0.05)
+(defparameter *intensity* 10.0)
+(defparameter *weight* 0.015)
+(defparameter *trail-count* 3000)
+(defparameter *t-scale* 0.3)
+(defparameter *t-resolution* 0.02)
+
+(defparameter *scaling* 0.9)
 
 (defparameter *eps* 1e-6)
-(defvar *loop-start-time* 0.0)
+(defvar *loop-start-time* 4667681.0)
 (defparameter *blending*
   (make-blending-params
    :source-rgb :src-alpha
    :destination-rgb :one
-   :mode-rgb :func-add))
+   :mode-rgb :max))
 
 (defun test-curve ()
   (make-buffer-stream
@@ -41,7 +42,7 @@
                        (norm (vec2 (- (y tang)) (x tang))))
 
                   (emit ()
-                        (vec4 (-> (+ (* 0.0 tang tang-sign) (* norm norm-sign))       ; base direction
+                        (vec4 (-> (+ (* 0.3 tang) (* norm norm-sign))       ; base direction
                                   (* usize)          ; scaled segment quad
                                   (+ ,(if (>= idx 2) ; translate to current pos
                                           end
@@ -109,7 +110,7 @@
                     :repeat *trail-count*
                     :collect (v! (cos (loop-thingy i 3.0 *t-scale*))
                                  (sin (+ (loop-thingy i 5.0 *t-scale*)
-                                         (loop-thingy i 0.002 *t-scale*)))))
+                                         (loop-thingy i 0.0015 *t-scale*)))))
               :element-type :vec2
               :dimensions *trail-count*
               ))
@@ -143,6 +144,8 @@
                         :key #'slynk::channel-thread))))
   (let ((start (get-internal-real-time)))
     (step-scope)
-    (sleep (max 0.0 (- (/ 1.0 60.0)
-                       (/ (- (get-internal-real-time) start)
-                          internal-time-units-per-second))))))
+    (sleep (let ((it (max 0.0 (- (/ 1.0 60.0)
+                                 (/ (- (get-internal-real-time) start)
+                                    internal-time-units-per-second)))))
+             ;; (print (/ 1.0 it))
+             it))))
